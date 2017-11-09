@@ -15,7 +15,7 @@ namespace HandmadeRay
 {
     public static class Constants
     {
-        public const int RAYS_PER_PIXEL = 32;
+        public const int RAYS_PER_PIXEL = 128;
         public const int MAX_BOUNCES = 8;
         public const float MIN_HIT_DISTANCE = 0.001f;
         public const float TOLERANCE = 0.0001f;
