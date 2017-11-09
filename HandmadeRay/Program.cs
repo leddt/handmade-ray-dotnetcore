@@ -35,7 +35,7 @@ namespace HandmadeRay
             Render(world, bitmap);
             sw.Stop();
             
-            bitmap.Save(@"C:\Users\David\Desktop\output.bmp");
+            bitmap.Save("output.bmp");
             
             Console.WriteLine($"\rDone! ({sw.ElapsedMilliseconds} ms)                      ");
             Console.WriteLine($"{world.BoucesComputed:N0} bounces");
