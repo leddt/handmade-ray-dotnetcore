@@ -7,7 +7,9 @@ This is my dotnet core implementation of Casey Muratori's ray tracer, as seen in
 ### Episode 00 - Making a Simple Raycaster
 https://www.youtube.com/watch?v=ZAeU3Z0PmcU
 
-For this episode I followed Casey's implementation pretty closely. Instead of writing my own bitmap writing code, I used the `CoreCompat.System.Drawing.v2` package. For vectors I'm using `System.Numerics`.
+For this episode I followed Casey's implementation pretty closely. I took some liberties in organizing the code slightly differently, but the core algorithms are the same.
+
+Instead of writing my own bitmap writing code, I used the `CoreCompat.System.Drawing.v2` package. For vectors I'm using `System.Numerics`.
 
 ### Episode 01 - Multithreading
 https://www.youtube.com/watch?v=ZAeU3Z0PmcU
