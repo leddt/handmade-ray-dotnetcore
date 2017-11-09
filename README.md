@@ -16,4 +16,4 @@ Instead of a work queue, I used dotnet's `Parallel.For` to render the tiles in p
 
 ## Latest render
 
-![Output][HandmadeRay/output.bmp]
+![Output](HandmadeRay/output.bmp)
