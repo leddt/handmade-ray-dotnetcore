@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-
+using CommandLine;
 using HandmadeRay.Model;
 using HandmadeRay.Model.Shapes;
 
@@ -13,29 +13,44 @@ using static HandmadeRay.Utilities;
 
 namespace HandmadeRay
 {
-    public static class Constants
+    public class Options
     {
-        public const int RAYS_PER_PIXEL = 128;
-        public const int MAX_BOUNCES = 8;
-        public const float MIN_HIT_DISTANCE = 0.001f;
-        public const float TOLERANCE = 0.0001f;
+        [Option('w', "width", DefaultValue = 1920, HelpText = "Width of the output image")]
+        public int OutputWidth { get; set; }
+
+        [Option('h', "height", DefaultValue = 1080, HelpText = "Height of the output image")]
+        public int OutputHeight { get; set; }
+
+        [Option('r', "rays", DefaultValue = 64, HelpText = "Rays per pixel")]
+        public int RaysPerPixel { get; set; }
+
+        [Option('b', "bounces", DefaultValue = 8, HelpText = "Maximum bounces per rays")]
+        public int Bounces { get; set; }
+        
+        [Option('f', "filename", DefaultValue = "output.bmp", HelpText = "Output filename")]
+        public string Filename { get; set; }
     }
 
     public class Program
     {
         public static void Main(string[] args)
         {
-            var bitmap = new Bitmap(1920, 1080);
+            var options = new Options();
+            if (!Parser.Default.ParseArgumentsStrict(args, options))
+                return;
+
+            var bitmap = new Bitmap(options.OutputWidth, options.OutputHeight);
 
             var world = MakeWorld();
             world.Camera = MakeCamera(new Vector3(0, -10, 1), bitmap.Width, bitmap.Height);
+            world.Options = options;
 
             var sw = new Stopwatch();
             sw.Start();
             Render(world, bitmap);
             sw.Stop();
             
-            bitmap.Save("output.bmp");
+            bitmap.Save(options.Filename);
             
             Console.WriteLine($"\rDone! ({sw.ElapsedMilliseconds} ms)                      ");
             Console.WriteLine($"{world.BoucesComputed:N0} bounces");
@@ -119,7 +134,7 @@ namespace HandmadeRay
             var tileCountY = (bitmap.Height + tileHeight - 1) / tileHeight;
             world.TotalTileCount = tileCountX * tileCountY;
 
-            Console.WriteLine($"{RAYS_PER_PIXEL} rays/px, {MAX_BOUNCES} max bounces");
+            Console.WriteLine($"{world.Options.RaysPerPixel} rays/px, {world.Options.Bounces} max bounces");
             Console.WriteLine($"{tileCountX*tileCountY} tiles, {tileWidth}x{tileHeight}px");
 
             Parallel.For(0, tileCountY, tileY => {
@@ -156,6 +171,8 @@ namespace HandmadeRay
             var filmCenter = camera.Position - camera.FilmDist * camera.Z;
 
             var bounces = 0;
+            var raysPerPixel = world.Options.RaysPerPixel;
+            var maxBounces = world.Options.Bounces;
 
             for (var y = tile.MinY; y < tile.MaxY; y++)
             {
@@ -166,13 +183,14 @@ namespace HandmadeRay
                     var filmX = -1f + 2f * (x / (float) bitmapWidth);
 
                     var color = Vector3.Zero;
-                    var contrib = 1f / RAYS_PER_PIXEL;
-                    for (var rayIndex = 0; rayIndex < RAYS_PER_PIXEL; rayIndex++)
+                    var contrib = 1f / raysPerPixel;
+                    for (var rayIndex = 0; rayIndex < raysPerPixel; rayIndex++)
                     {
                         var offX = filmX + RandomBilateral(rng) * halfPixelWidth;
                         var offY = filmY + RandomBilateral(rng) * halfPixelHeight;
 
-                        var filmPosition = filmCenter + offX * camera.FilmWidth / 2f * camera.X +
+                        var filmPosition = filmCenter +
+                                           offX * camera.FilmWidth / 2f * camera.X +
                                            offY * camera.FilmHeight / 2f * camera.Y;
 
                         var ray = new Ray {
@@ -180,7 +198,7 @@ namespace HandmadeRay
                             Direction = Vector3.Normalize(filmPosition - camera.Position)
                         };
 
-                        var castResult = RayCast(world, ray, rng);
+                        var castResult = RayCast(world, ray, rng, maxBounces);
 
                         color += contrib * castResult.Color;
                         bounces += castResult.Bounces;
@@ -196,12 +214,12 @@ namespace HandmadeRay
             Console.Write($"\rRendering... {world.TilesRendered}/{world.TotalTileCount} ({world.TilesRendered * 100 / world.TotalTileCount}%)");
         }
 
-        private static CastResult RayCast(World world, Ray ray, Random rng)
+        private static CastResult RayCast(World world, Ray ray, Random rng, int bounces)
         {
             var result = new CastResult();
             var attenuation = Vector3.One;
 
-            for (var bounceCount = 0; bounceCount < MAX_BOUNCES; bounceCount++)
+            for (var bounceCount = 0; bounceCount < bounces; bounceCount++)
             {
                 result.Bounces++;
 
